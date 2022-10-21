@@ -47,7 +47,7 @@ const HomeScreen = () => {
     
     const scaleAnimation = Animated.timing(scaleValue, {
         toValue: 1,
-        duration: 10000,
+        duration: 2000,
         useNativeDriver: true
     });
 

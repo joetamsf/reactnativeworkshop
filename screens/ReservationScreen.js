@@ -13,6 +13,8 @@ import * as Animatable from 'react-native-animatable';
 import { Picker } from '@react-native-picker/picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import React from "react";
+import * as Notifications from 'expo-notifications';
+
 
 
 const ReservationScreen = () => {
@@ -29,10 +31,6 @@ const ReservationScreen = () => {
     }
 
     const handleReservation = () => {
-        // console.log(`campers ${campers}`);
-        // console.log(`hikeln ${hikeIn}`);
-        // console.log(`date ${date}`);
-        // setShowModal(!showModal)
         Alert.alert(
             'Begin Search?',
             `Number of Campers: ${campers}, \nHike-In? ${hikeIn}, \nDate:  ${date}`,
@@ -46,8 +44,12 @@ const ReservationScreen = () => {
                 },
                 {
                     text: 'OK',
-                    onPress: () => 
+                    onPress: () =>  {
+                    presentLocalNotification(
+                        date.toLocaleDateString('en-US')
+                    );
                     resetForm()
+                    }
                 }
             ]
 
@@ -59,6 +61,35 @@ const ReservationScreen = () => {
         setHikeln(false);
         setDate(new Date());
         setShowCalendar(false);
+    }
+
+    const presentLocalNotification = async (reservationDate) => {
+        const sendNotification = () => {
+            Notifications.setNotificationHandler({
+                handleNotification: async () => ({
+                    shouldSetBadge: true,
+                    shouldShowAlert: true,
+                    shouldPlaySound: true
+                })
+            });
+            Notifications.scheduleNotificationAsync({
+                content: {
+                    title: 'Your Campsite Reservation Search',
+                    body: `Search for ${reservationDate} requested`
+                },
+                    trigger: null,
+                
+            });
+        }
+        let permission = await Notifications.getPermissionsAsync();
+
+        if (!permission.granted) {
+            await Notifications.requestPermissionsAsync();
+        }
+
+        if (permission.granted) {
+            sendNotification();
+        }
     }
 
     return (

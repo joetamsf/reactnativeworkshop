@@ -1,6 +1,6 @@
 import React from 'react';
 import DirectoryScreen from './DirectoryScreen';
-import { StyleSheet, Platform, View } from 'react-native';
+import { StyleSheet, Platform, View, Alert, ToastAndroid } from 'react-native';
 import CampsiteInfoScreen from "./CampsiteInfoScreen";
 import Constants from 'expo-constants';
 import { createStackNavigator } from '@react-navigation/stack';
@@ -12,7 +12,7 @@ import { Icon } from 'react-native-elements';
 import { Text, Image } from 'react-native';
 import { DrawerContentScrollView, DrawerItemList } from '@react-navigation/drawer';
 import logo from '../assets/images/logo.png';
-import { useDispatch } from 'react-redux';
+import { connect, useDispatch } from 'react-redux';
 import { useEffect } from 'react';
 import { fetchPartners } from '../features/partners/partnersSlice';
 import { fetchCampsites } from '../features/campsites/campsitesSlice';
@@ -20,6 +20,10 @@ import { fetchPromotions } from '../features/promotions/promotionsSlice';
 import { fetchComments } from '../features/comments/commentsSlice';
 import ReservationScreen from './ReservationScreen';
 import FavoritesScreen from './FavoritesScreen';
+import LoginScreen from './LoginScreen';
+import { getFocusedRouteNameFromRoute } from '@react-navigation/core';
+import NetInfo from '@react-native-community/netinfo'; 
+
 
 
 const Drawer = createDrawerNavigator();
@@ -159,6 +163,37 @@ const FavoritesNavigator = () => {
     )
 }
 
+const LoginNavigator = () => {
+    const Stack = createStackNavigator();
+    return (
+        <Stack.Navigator
+            screenOptions={screenOptions}
+        >
+            <Stack.Screen
+                name='Login'
+                component={LoginScreen}
+                options={({ navigation, route }) => ({ 
+                    headerTitle: getFocusedRouteNameFromRoute(route),
+                    headerLeft: () => (
+                        <Icon 
+                            name={
+                                getFocusedRouteNameFromRoute(route) === 
+                                'Register'
+                                    ? 'user-plus'
+                                    : 'sign-in'
+                            }
+                            type='font-awesome'
+                            iconStyle={styles.stackIcon}
+                            onPress={() => navigation.toggleDrawer()}
+                        />
+                    )
+                })}
+
+            />
+        </Stack.Navigator>
+    )
+}
+
 
 
 
@@ -221,6 +256,65 @@ const Main = () => {
         dispatch(fetchComments());
     }, [dispatch]);
 
+    useEffect(async () => {
+        // NetInfo.fetch().then((connectionInfo) => {
+        //     Platform.OS === 'ios' ?
+        //         Alert.alert(
+        //             'Initial Network Connectivity Type: ',
+        //             connectionInfo.type
+        //         )
+        //         : ToastAndroid.show(
+        //             'Initial Network Connectivity Type: ' + 
+        //                 connectionInfo.type,
+        //                 ToastAndroid.LONG
+        //         );
+        // })
+        const connectionInfo = await NetInfo.fetch();
+        
+        Platform.OS === 'ios' ?
+            Alert.alert(
+                'Initial Network Connectivity Type: ',
+                    connectionInfo.type
+            )
+            : ToastAndroid.show(
+                'Initial Network Connectivity Type: ' + 
+                    connectionInfo.type,
+                    ToastAndroid.LONG
+            );
+
+        const unsubsribeNetInfo = NetInfo.addEventListener(
+            (connectionInfo) => {
+                handleConnectivityChange(connectionInfo);
+            }
+        );
+
+        return unsubsribeNetInfo;
+
+    }, [])
+
+    const handleConnectivityChange = (connectionInfo) => {
+        let connectionMsg = 'You are now connected to an active network.';
+
+        switch (connectionInfo.type) {
+            case 'none':
+                connectionMsg = 'No network connection is active.';
+                break;
+            case 'unknown':
+                connectionMsg = 'The network connection state is now unknown.';
+                break;
+            case 'cellular':
+                connectionMsg = 'You are now connected to a cellular network.';
+                break;
+            case 'wifi':
+                connectionMsg = 'You are now connected to a Wifi network.';
+                break;
+        } 
+        Platform.OS === 'ios'
+        ? Alert.alert('Connection change:', connectionMsg)
+        : ToastAndroid.show(connectionMsg, ToastAndroid.LONG)
+    }
+
+
     return (
         <View style={{ flex: 1, paddingTop: Platform.OS === 'ios' ? 0: Constants.statusBarHeight }}>
             <Drawer.Navigator
@@ -228,6 +322,21 @@ const Main = () => {
                 drawerContent={CustomDrawerContent}
                 drawerStyle={{ backgroundColor: '#CEC8FF' }}
             >
+                <Drawer.Screen
+                name='Login'
+                component={LoginNavigator}
+                options={{ 
+                        drawerIcon: ({ color }) => (
+                                <Icon
+                                    name='sign-in'
+                                    type='font-awesome'
+                                    size={24}
+                                    iconStyle={{ width: 24 }}
+                                    color={color}
+                                />
+                        )
+                }}
+                />
                 <Drawer.Screen
                     name='Home'
                     component={HomeNavigator}
