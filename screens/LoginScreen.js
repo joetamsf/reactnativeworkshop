@@ -1,12 +1,14 @@
 import { useEffect, useState, React } from 'react';
 import * as SecureStore from 'expo-secure-store';
-import { View, StyleSheet, ScrollView, Image, Alert, ToastAndroid, Platform } from 'react-native';
+import { View, StyleSheet, ScrollView, Image } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { baseUrl } from '../shared/baseUrl'; 
 import logo from '../assets/images/logo.png';
 import { CheckBox, Input, Button, Icon } from 'react-native-elements';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import NetInfo from '@react-native-community/netinfo'; 
+import * as ImageManipulator from 'expo-image-manipulator';
+import * as MediaLibrary from 'expo-media-library';
+import { SaveFormat } from 'expo-image-manipulator';
 
 
 const LoginTab = ({ navigation }) => {
@@ -157,13 +159,39 @@ const RegisterTab = () => {
                 aspect: [1, 1]
             });
 
-            if(!(await capturedImage).cancelled) {
-                console.log(capturedImage);
-                setImageUrl(capturedImage.uri);
+            if(!capturedImage.cancelled) {
+                processImage(capturedImage.uri);
             }
         }
 
     }
+
+    const getImageFromGallery = async () => {
+        const mediaLibraryPermissions = await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+        if (mediaLibraryPermissions.granted) {
+            const capturedImage = await ImagePicker.launchImageLibraryAsync({
+                allowsEditing: true,
+                aspect: [1, 1]
+            });
+
+            if(!capturedImage.cancelled) {
+                processImage(capturedImage.uri);
+            }
+        }
+    }
+
+    const processImage = async (imgUri) => {
+        const processedImage = await ImageManipulator.manipulateAsync(
+            imgUri, 
+            [{ resize: {width: 400}}],
+            { format: SaveFormat.PNG }
+        );
+
+        MediaLibrary.saveToLibraryAsync(processedImage.uri);
+        setImageUrl(processedImage.uri);
+    }
+
     return (
         <ScrollView>
         <View style={styles.container} >
@@ -176,6 +204,10 @@ const RegisterTab = () => {
                     <Button 
                         title='Camera'
                         onPress={getImageFromCamera}
+                    />
+                    <Button 
+                        title='Gallery'
+                        onPress={getImageFromGallery}
                     />
                 </View>
                 <Input
